@@ -23,6 +23,12 @@ node -e '
 ' "$VERSION"
 (cd typescript && pnpm --silent generate)
 
+# Python: pyproject.toml, and the generated version file (the same line the
+# generator writes, so CI's "generated code is up to date" check still passes).
+sed -i.bak -E "s/^version = \"[^\"]+\"/version = \"$VERSION\"/" python/pyproject.toml
+sed -i.bak -E "s/^VERSION = \"[^\"]+\"/VERSION = \"$VERSION\"/" python/src/rockware/_generated/version.py
+rm -f python/pyproject.toml.bak python/src/rockware/_generated/version.py.bak
+
 # MIGRATING.md: "# Unreleased" becomes this version, and a new one starts above it.
 if grep -q '^# Unreleased$' MIGRATING.md; then
   node -e '
