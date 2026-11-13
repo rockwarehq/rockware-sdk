@@ -9,6 +9,7 @@ import json
 import math
 import re
 import time
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -84,6 +85,10 @@ def at(value: Any, path: str) -> Any:
 
 
 _MISSING = object()
+
+
+def instant(value: Any) -> datetime:
+    return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
 
 
 def client_settings(test: dict[str, Any]) -> dict[str, Any]:
@@ -168,6 +173,8 @@ def test_conformance(test: dict[str, Any], mode: str) -> None:
                 assert value == assertion["expected"], assertion["path"]
             if "pattern" in assertion:
                 assert re.search(assertion["pattern"], str(value))
+            if "expectedInstant" in assertion:
+                assert instant(value) == instant(assertion["expectedInstant"]), assertion["path"]
         elif kind == "delayBetweenRequests":
             gap = (sent[index + 1]["at"] - sent[index]["at"]) * 1000
             assert gap >= assertion["minMs"], f"gap {gap:.0f}ms"
