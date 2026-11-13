@@ -18,7 +18,7 @@
       { "type": "requestBody", "index": 1, "path": "variables.after", "expected": "c2" },
       { "type": "requestBody", "index": 2, "path": "variables.after", "expected": "c4" },
       { "type": "requestBody", "index": 2, "path": "variables.first", "expected": 2 },
-      { "type": "requestBody", "index": 2, "path": "variables.updatedSince", "expected": "2026-11-01T00:00:00.000Z" }
+      { "type": "requestBody", "index": 2, "path": "variables.updatedSince", "expectedInstant": "2026-11-01T00:00:00.000Z" }
     ]
   },
   {

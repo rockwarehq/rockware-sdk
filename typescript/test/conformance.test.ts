@@ -134,6 +134,9 @@ for (const file of files) {
               if (assertion.absent) expect(value, assertion.path).toBeUndefined();
               if ("expected" in assertion) expect(value, assertion.path).toEqual(assertion.expected);
               if (assertion.pattern) expect(String(value)).toMatch(new RegExp(assertion.pattern));
+              if (assertion.expectedInstant) {
+                expect(Date.parse(String(value)), assertion.path).toBe(Date.parse(assertion.expectedInstant));
+              }
               break;
             }
             case "delayBetweenRequests": {
