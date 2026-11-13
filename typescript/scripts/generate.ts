@@ -3,6 +3,11 @@
 //
 // It also checks the operations against SPEC.md section 2, so a broken one
 // fails here, before any SDK is built from it.
+//
+// pnpm check-operations only checks, and writes nothing. With RW_SCHEMA set
+// to another schema file, it checks against that one: rw-server's CI does
+// this with each PR's schema, so an API change that would break the SDKs
+// fails there first.
 
 import { readFileSync, readdirSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -46,7 +51,8 @@ const VERBS = [
   "Link",
 ];
 
-const schemaText = readFileSync(join(root, "schema", "developer-api.graphql"), "utf8");
+const checkOnly = process.argv.includes("--check");
+const schemaText = readFileSync(process.env.RW_SCHEMA ?? join(root, "schema", "developer-api.graphql"), "utf8");
 const schema = buildSchema(schemaText);
 const operationFiles = readdirSync(join(root, "operations"))
   .filter((file) => file.endsWith(".graphql"))
@@ -181,6 +187,12 @@ for (const name of behavior.safeToRepeat) {
 if (problems.length) {
   console.error(`operations/ has problems:\n- ${problems.join("\n- ")}`);
   process.exit(1);
+}
+if (checkOnly) {
+  console.log(
+    `All ${planned.length} operations are fine against ${process.env.RW_SCHEMA ?? "schema/developer-api.graphql"}.`,
+  );
+  process.exit(0);
 }
 
 const header =

@@ -24,6 +24,7 @@
   "packageManager": "pnpm@11.5.1",
   "scripts": {
     "generate": "tsx scripts/generate.ts",
+    "check-operations": "tsx scripts/generate.ts --check",
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p . --noEmit",
     "lint": "biome check .",

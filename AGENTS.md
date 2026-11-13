@@ -35,6 +35,8 @@ conformance/ ─────────────────────▶ 
 2. A write that's safe to send twice goes in `safeToRepeat` in `behavior.json`.
 3. Regenerate every SDK. The TypeScript generator also checks the rules above and the server's limits (6 deep, 300 fields).
 
+`pnpm check-operations` in `typescript/` checks without writing anything. Set `RW_SCHEMA` to another schema file to check against it. rw-server's CI does this with each PR's schema, so an API change that breaks an operation fails there before it ships.
+
 ## Releasing
 
 Every SDK has the version in `VERSION`. To release:
