@@ -75,6 +75,71 @@ jobs:
       - run: mypy
       - run: pytest -q
 
+  go:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-version: ["1.24", "stable"]
+    defaults:
+      run:
+        working-directory: go
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Generated code is up to date
+        working-directory: .
+        run: |
+          pip install graphql-core
+          python -m codegen go
+          git diff --exit-code -- go || {
+            echo "::error::go/ is out of date. Run python -m codegen go at the repo root and commit it."
+            exit 1
+          }
+
+      - run: test -z "$(gofmt -l .)"
+      - run: go vet ./...
+      - run: go test ./...
+
+  dotnet:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: dotnet
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Generated code is up to date
+        working-directory: .
+        run: |
+          pip install graphql-core
+          python -m codegen dotnet
+          git diff --exit-code -- dotnet || {
+            echo "::error::dotnet/ is out of date. Run python -m codegen dotnet at the repo root and commit it."
+            exit 1
+          }
+
+      - run: dotnet build src/Rockware.Sdk -c Release
+      - run: dotnet test tests/Rockware.Sdk.Tests
+      - run: dotnet pack src/Rockware.Sdk -c Release -o out
+
   secrets:
     runs-on: ubuntu-latest
     steps:

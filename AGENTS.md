@@ -16,8 +16,12 @@ conformance/ ─────────────────────▶ 
 | --- | --- | --- | --- |
 | TypeScript | `typescript/` | `pnpm generate` (`scripts/generate.ts`) | `test/conformance.test.ts` |
 | Python | `python/` | `python scripts/generate.py` (needs `pip install -e ".[dev]"`) | `tests/test_conformance.py`, both clients |
-| C# / .NET | `dotnet/` | to come | to come |
-| Go | `go/` | to come | to come |
+| C# / .NET | `dotnet/` | `python -m codegen dotnet` at the repo root | `tests/Rockware.Sdk.Tests/ConformanceTests.cs` |
+| Go | `go/` | `python -m codegen go` at the repo root (needs gofmt) | `conformance_test.go` |
+
+Go and C# share one generator, `codegen/` (Python, with graphql-core). `codegen/model.py` reads the schema, `operations/` and `behavior.json` into a plain model, and `go.py` and `dotnet.py` write code from it. Type names match the Python SDK's: a fragment is its own type, a nested selection is `<Owner><Field>`, and an operation's answer is `<Operation>Result`. Moving the Python generator onto `codegen/` too is a later cleanup.
+
+Go and C# also generate a small table for their conformance runner, so the shared tests call the same methods customers do.
 
 ## Hard rules
 

@@ -1,0 +1,90 @@
+# Releases the Go module when a v<version> tag is pushed. A module in a
+# folder is found by a tag with the folder's name in front, so v0.2.0 gets a
+# matching go/v0.2.0 here, and the Go proxy serves
+# github.com/rockwarehq/rockware-sdk/go@v0.2.0 from it. Run it by hand to
+# rehearse: it tests and says what it would tag.
+#
+# Nothing to set up: Go has no registry account.
+
+name: Release Go
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: go
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: The tag matches the version
+        id: version
+        run: |
+          FILE="$(cat ../VERSION)"
+          CODE="$(sed -n 's/^const Version = "\(.*\)"$/\1/p' operations_gen.go)"
+          if [ "$FILE" != "$CODE" ]; then
+            echo "::error::VERSION $FILE and operations_gen.go $CODE must match"
+            exit 1
+          fi
+          if [ "$GITHUB_EVENT_NAME" = "push" ] && [ "${GITHUB_REF#refs/tags/v}" != "$FILE" ]; then
+            echo "::error::Tag ${GITHUB_REF#refs/tags/} doesn't match VERSION $FILE"
+            exit 1
+          fi
+          echo "tag=go/v$FILE" >> "$GITHUB_OUTPUT"
+          echo "Would tag go/v$FILE"
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - run: go vet ./...
+      - run: go test ./...
+
+  tag:
+    needs: test
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      # A tag that's already there is left alone if it's on this commit, and
+      # stops the job if it isn't: a released version never moves.
+      - name: Tag the Go module
+        env:
+          GO_TAG: ${{ needs.test.outputs.tag }}
+        run: |
+          REMOTE_SHA=$(git ls-remote --tags --refs origin "$GO_TAG" | awk '{print $1}')
+          if [ -n "$REMOTE_SHA" ]; then
+            if [ "$REMOTE_SHA" = "$GITHUB_SHA" ]; then
+              echo "::notice::$GO_TAG is already on this commit"
+              exit 0
+            fi
+            echo "::error::$GO_TAG is already on another commit ($REMOTE_SHA)"
+            exit 1
+          fi
+          git tag "$GO_TAG" "$GITHUB_SHA"
+          git push origin "$GO_TAG"
+
+      - name: Ask the Go proxy to fetch it
+        env:
+          GO_TAG: ${{ needs.test.outputs.tag }}
+        run: curl -fsS "https://proxy.golang.org/github.com/rockwarehq/rockware-sdk/go/@v/${GO_TAG#go/}.info" || true

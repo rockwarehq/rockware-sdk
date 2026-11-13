@@ -62,9 +62,11 @@ A token belongs to one plant, so there's no plant or account to choose. Everythi
 
 **Methods.** There's one method per operation, named for it in the language's style: `listProducts`, `list_products`, `ListProductsAsync`, `ListProducts`. It returns the operation's root field, not the whole `data` object. So `getProduct` returns the product, or nothing if there isn't one.
 
+**Inputs.** A field of an input you don't set isn't sent, so the server leaves it as it is. Setting one to null sends null, which clears it. Go can't send null or an empty list for an input field yet: a nil one is left out. A top-level argument that's null or unset isn't sent at all.
+
 ## 4. Errors
 
-Every failure is one error type: `RockwareError` (Go: `*rockware.Error`).
+Every failure is one error type: `RockwareError` (C#: `RockwareException`, Go: `*rockware.Error`). Field names follow each language's style: `httpStatus`, `http_status`, `HttpStatus`, `HTTPStatus`.
 
 | Field | What it holds |
 | --- | --- |
