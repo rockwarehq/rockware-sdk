@@ -44,3 +44,5 @@ Every SDK has the version in `VERSION`. To release:
 1. Run `scripts/bump-version.sh <version>`. It updates every package and starts the version's section in MIGRATING.md.
 2. Open a PR, and merge it.
 3. Push the tag `v<version>`. Each language's release workflow publishes it.
+
+No registry token is stored here. Each registry trusts its release workflow directly (trusted publishing), and the publishing job is the only one that can publish. Run a release workflow by hand to rehearse it: it builds, tests and does a dry run, and publishes nothing.
