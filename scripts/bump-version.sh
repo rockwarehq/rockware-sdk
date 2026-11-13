@@ -13,14 +13,9 @@ cd "$(dirname "$0")/.."
 
 echo "$VERSION" > VERSION
 
-# TypeScript: package.json, then the generated version file.
-node -e '
-  const fs = require("fs");
-  const file = "typescript/package.json";
-  const pkg = JSON.parse(fs.readFileSync(file, "utf8"));
-  pkg.version = process.argv[1];
-  fs.writeFileSync(file, JSON.stringify(pkg, null, 2) + "\n");
-' "$VERSION"
+# TypeScript: package.json's version line only, then the generated version file.
+sed -i.bak -E "s/^  \"version\": \"[^\"]+\"/  \"version\": \"$VERSION\"/" typescript/package.json
+rm -f typescript/package.json.bak
 (cd typescript && pnpm --silent generate)
 
 # Python: pyproject.toml, and the generated version file (the same line the
