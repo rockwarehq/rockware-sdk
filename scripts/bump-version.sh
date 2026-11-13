@@ -13,15 +13,16 @@ cd "$(dirname "$0")/.."
 
 echo "$VERSION" > VERSION
 
-# TypeScript: package.json, then the generated version file.
-node -e '
-  const fs = require("fs");
-  const file = "typescript/package.json";
-  const pkg = JSON.parse(fs.readFileSync(file, "utf8"));
-  pkg.version = process.argv[1];
-  fs.writeFileSync(file, JSON.stringify(pkg, null, 2) + "\n");
-' "$VERSION"
+# TypeScript: package.json's version line only, then the generated version file.
+sed -i.bak -E "s/^  \"version\": \"[^\"]+\"/  \"version\": \"$VERSION\"/" typescript/package.json
+rm -f typescript/package.json.bak
 (cd typescript && pnpm --silent generate)
+
+# Python: pyproject.toml, and the generated version file (the same line the
+# generator writes, so CI's "generated code is up to date" check still passes).
+sed -i.bak -E "s/^version = \"[^\"]+\"/version = \"$VERSION\"/" python/pyproject.toml
+sed -i.bak -E "s/^VERSION = \"[^\"]+\"/VERSION = \"$VERSION\"/" python/src/rockware/_generated/version.py
+rm -f python/pyproject.toml.bak python/src/rockware/_generated/version.py.bak
 
 # MIGRATING.md: "# Unreleased" becomes this version, and a new one starts above it.
 if grep -q '^# Unreleased$' MIGRATING.md; then
