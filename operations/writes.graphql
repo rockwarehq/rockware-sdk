@@ -1,0 +1,97 @@
+# Writes. Records are found by their id in your system (externalId) and the
+# name of that system (source, "erp" if you leave it out). Problems come back
+# in the answer's errors list, not as a failed request: all or nothing, so if
+# errors isn't empty, nothing was saved.
+
+mutation UpsertWorkcenters($workcenters: [WorkcenterInput!]!, $source: String) {
+  upsertWorkcenters(workcenters: $workcenters, source: $source) {
+    results { externalId action workcenter { ...WorkcenterFields } }
+    errors { ...UpsertErrorFields }
+  }
+}
+
+mutation UpsertStations($stations: [StationInput!]!, $source: String) {
+  upsertStations(stations: $stations, source: $source) {
+    results { externalId action station { ...StationFields } }
+    errors { ...UpsertErrorFields }
+  }
+}
+
+mutation UpsertCustomers($customers: [CustomerUpsertInput!]!, $source: String) {
+  upsertCustomers(customers: $customers, source: $source) {
+    results { externalId action customer { ...CustomerFields } }
+    errors { ...UpsertErrorFields }
+  }
+}
+
+mutation UpsertMaterials($materials: [MaterialInput!]!, $source: String) {
+  upsertMaterials(materials: $materials, source: $source) {
+    results { externalId action material { ...MaterialFields } }
+    errors { ...UpsertErrorFields }
+  }
+}
+
+mutation UpsertProducts($products: [ProductInput!]!, $source: String) {
+  upsertProducts(products: $products, source: $source) {
+    results { externalId action product { ...ProductFields } }
+    errors { ...UpsertErrorFields }
+  }
+}
+
+mutation UpsertTools($tools: [ToolInput!]!, $source: String) {
+  upsertTools(tools: $tools, source: $source) {
+    results { externalId action tool { ...ToolFields } }
+    errors { ...UpsertErrorFields }
+  }
+}
+
+mutation UpsertJobs($jobs: [JobInput!]!, $source: String) {
+  upsertJobs(jobs: $jobs, source: $source) {
+    results { externalId action job { ...JobFields } }
+    errors { ...UpsertErrorFields }
+  }
+}
+
+mutation UpsertProductionRuns($runs: [ProductionRunInput!]!, $source: String) {
+  upsertProductionRuns(runs: $runs, source: $source) {
+    results { externalId action run { ...ProductionRunFields } }
+    errors { ...UpsertErrorFields }
+  }
+}
+
+mutation UpsertOrder($order: OrderInput!, $source: String) {
+  upsertOrder(order: $order, source: $source) {
+    action
+    order { ...OrderFields }
+    errors { ...UpsertErrorFields }
+  }
+}
+
+mutation SequenceLineup($station: String!, $runs: [String!]!, $source: String) {
+  sequenceLineup(station: $station, runs: $runs, source: $source) {
+    action
+    station { id name }
+    errors { ...UpsertErrorFields }
+  }
+}
+
+mutation LinkExternalIds($kind: ExternalIdKind!, $links: [ExternalIdLinkInput!]!, $source: String) {
+  linkExternalIds(kind: $kind, links: $links, source: $source) {
+    results { id externalId action }
+    errors { ...UpsertErrorFields }
+  }
+}
+
+mutation UpsertEntityModels($models: [EntityModelInput!]!) {
+  upsertEntityModels(models: $models) {
+    results { key action model { ...EntityModelFields } }
+    errors { ...UpsertErrorFields }
+  }
+}
+
+mutation UpsertEntityRecords($model: String!, $records: [EntityRecordInput!]!, $source: String) {
+  upsertEntityRecords(model: $model, records: $records, source: $source) {
+    results { externalId action record { ...EntityRecordFields } }
+    errors { ...UpsertErrorFields }
+  }
+}

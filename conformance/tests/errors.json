@@ -1,0 +1,122 @@
+[
+  {
+    "name": "401 is auth_required",
+    "operation": "GetSite",
+    "responses": [
+      { "status": 401, "headers": { "x-request-id": "req_401" }, "body": { "errors": [{ "message": "Use an API token", "extensions": { "code": "UNAUTHENTICATED" } }] } }
+    ],
+    "assertions": [
+      { "type": "requestCount", "expected": 1 },
+      { "type": "error", "code": "auth_required", "httpStatus": 401, "retryable": false, "requestId": "req_401", "serverCode": "UNAUTHENTICATED" },
+      { "type": "errorMessage", "pattern": "Use an API token" }
+    ]
+  },
+  {
+    "name": "403 is forbidden",
+    "operation": "GetSite",
+    "responses": [{ "status": 403, "body": { "errors": [{ "message": "This token needs the data:read scope" }] } }],
+    "assertions": [
+      { "type": "error", "code": "forbidden", "httpStatus": 403, "retryable": false },
+      { "type": "errorMessage", "pattern": "data:read" }
+    ]
+  },
+  {
+    "name": "FORBIDDEN in a 200 is forbidden",
+    "operation": "UpsertProducts",
+    "variables": { "products": [] },
+    "responses": [
+      { "status": 200, "body": { "data": null, "errors": [{ "message": "This token needs the data:write scope", "extensions": { "code": "FORBIDDEN" } }] } }
+    ],
+    "assertions": [
+      { "type": "error", "code": "forbidden", "httpStatus": 200, "serverCode": "FORBIDDEN", "retryable": false }
+    ]
+  },
+  {
+    "name": "404 is not_found",
+    "operation": "GetSite",
+    "responses": [{ "status": 404, "body": { "message": "Route POST:/graphql not found" } }],
+    "assertions": [{ "type": "error", "code": "not_found", "httpStatus": 404 }]
+  },
+  {
+    "name": "NOT_FOUND in a 200 is not_found",
+    "operation": "SendTestWebhook",
+    "variables": { "id": "wh_404" },
+    "responses": [{ "status": 200, "body": { "data": null, "errors": [{ "message": "No webhook wh_404", "extensions": { "code": "NOT_FOUND" } }] } }],
+    "assertions": [{ "type": "error", "code": "not_found", "serverCode": "NOT_FOUND" }]
+  },
+  {
+    "name": "400 is validation",
+    "operation": "ListProducts",
+    "variables": { "first": 500 },
+    "responses": [{ "status": 400, "body": { "errors": [{ "message": "first must be between 1 and 100", "extensions": { "code": "BAD_USER_INPUT" } }] } }],
+    "assertions": [
+      { "type": "requestCount", "expected": 1 },
+      { "type": "error", "code": "validation", "httpStatus": 400, "retryable": false, "serverCode": "BAD_USER_INPUT" }
+    ]
+  },
+  {
+    "name": "BAD_USER_INPUT in a 200 is validation",
+    "operation": "ListProducts",
+    "variables": { "first": 500 },
+    "responses": [{ "status": 200, "body": { "data": null, "errors": [{ "message": "first must be between 1 and 100", "extensions": { "code": "BAD_USER_INPUT" } }] } }],
+    "assertions": [{ "type": "error", "code": "validation", "serverCode": "BAD_USER_INPUT" }]
+  },
+  {
+    "name": "GRAPHQL_VALIDATION_FAILED is validation",
+    "operation": "GetSite",
+    "responses": [{ "status": 400, "body": { "errors": [{ "message": "A query may ask for at most 300 fields", "extensions": { "code": "GRAPHQL_VALIDATION_FAILED" } }] } }],
+    "assertions": [{ "type": "error", "code": "validation", "serverCode": "GRAPHQL_VALIDATION_FAILED" }]
+  },
+  {
+    "name": "any other server code is api_error, and the code is kept",
+    "operation": "ListEntityRecords",
+    "variables": { "model": "nope" },
+    "responses": [{ "status": 200, "body": { "data": null, "errors": [{ "message": "No entity nope", "extensions": { "code": "UNKNOWN_MODEL" } }] } }],
+    "assertions": [
+      { "type": "error", "code": "api_error", "serverCode": "UNKNOWN_MODEL", "retryable": false },
+      { "type": "errorMessage", "pattern": "No entity nope" }
+    ]
+  },
+  {
+    "name": "errors win over data in the same answer",
+    "operation": "GetSite",
+    "responses": [{ "status": 200, "body": { "data": { "site": { "id": "site_1" } }, "errors": [{ "message": "Something broke" }] } }],
+    "assertions": [{ "type": "error", "code": "api_error", "httpStatus": 200 }]
+  },
+  {
+    "name": "every message is kept, in order",
+    "operation": "GetSite",
+    "responses": [{ "status": 200, "body": { "data": null, "errors": [{ "message": "First problem" }, { "message": "Second problem" }] } }],
+    "assertions": [
+      { "type": "errorMessage", "pattern": "First problem.*Second problem" },
+      { "type": "errorCount", "expected": 2 }
+    ]
+  },
+  {
+    "name": "an answer that isn't JSON is api_error",
+    "operation": "GetSite",
+    "responses": [{ "status": 200, "rawBody": "<html>oops</html>" }],
+    "assertions": [{ "type": "error", "code": "api_error", "httpStatus": 200, "retryable": false }]
+  },
+  {
+    "name": "a 3xx isn't followed",
+    "operation": "GetSite",
+    "responses": [{ "status": 302, "headers": { "location": "https://elsewhere.example.com/graphql" } }],
+    "assertions": [
+      { "type": "requestCount", "expected": 1 },
+      { "type": "error", "code": "api_error", "httpStatus": 302, "retryable": false }
+    ]
+  },
+  {
+    "name": "the token is never in an error",
+    "operation": "GetSite",
+    "responses": [{ "status": 401, "body": { "errors": [{ "message": "Bad token rw_app_test" }] } }],
+    "assertions": [{ "type": "errorMessage", "excludes": "rw_app_test" }]
+  },
+  {
+    "name": "a long message is cut to 500 characters",
+    "operation": "GetSite",
+    "responses": [{ "status": 200, "body": { "data": null, "errors": [{ "message": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" }] } }],
+    "assertions": [{ "type": "errorMessageLength", "max": 500 }]
+  }
+]

@@ -1,0 +1,40 @@
+# Webhooks: the token needs webhooks:write. The signing secret comes back
+# only when a webhook is made or its secret is rotated.
+
+query ListWebhooks {
+  webhooks { ...WebhookFields }
+}
+
+query ListWebhookDeliveries($webhookId: ID!, $status: WebhookDeliveryStatus, $first: Int) {
+  webhookDeliveries(webhookId: $webhookId, status: $status, first: $first) { ...WebhookDeliveryFields }
+}
+
+mutation CreateWebhook($webhook: WebhookInput!) {
+  createWebhook(webhook: $webhook) {
+    secret
+    webhook { ...WebhookFields }
+  }
+}
+
+mutation UpdateWebhook($id: ID!, $webhook: WebhookUpdateInput!) {
+  updateWebhook(id: $id, webhook: $webhook) { ...WebhookFields }
+}
+
+mutation DeleteWebhook($id: ID!) {
+  deleteWebhook(id: $id)
+}
+
+mutation RotateWebhookSecret($id: ID!) {
+  rotateWebhookSecret(id: $id) {
+    secret
+    webhook { ...WebhookFields }
+  }
+}
+
+mutation SendTestWebhook($id: ID!) {
+  sendTestWebhook(id: $id) { ...WebhookDeliveryFields }
+}
+
+mutation RedeliverWebhook($deliveryId: ID!) {
+  redeliverWebhook(deliveryId: $deliveryId) { ...WebhookDeliveryFields }
+}

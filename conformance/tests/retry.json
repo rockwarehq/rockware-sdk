@@ -1,0 +1,149 @@
+[
+  {
+    "name": "a query retries a 503 and then succeeds",
+    "operation": "GetSite",
+    "responses": [
+      { "status": 503 },
+      { "status": 503 },
+      { "status": 200, "body": { "data": { "site": { "id": "site_1" } } } }
+    ],
+    "assertions": [
+      { "type": "requestCount", "expected": 3 },
+      { "type": "delayBetweenRequests", "index": 0, "minMs": 1000, "maxMs": 1500 },
+      { "type": "delayBetweenRequests", "index": 1, "minMs": 2000, "maxMs": 2500 },
+      { "type": "noError" },
+      { "type": "result", "path": "id", "expected": "site_1" }
+    ]
+  },
+  {
+    "name": "after 3 attempts the last error is given back",
+    "operation": "GetSite",
+    "responses": [
+      { "status": 502 },
+      { "status": 503 },
+      { "status": 504, "headers": { "x-request-id": "req_last" } }
+    ],
+    "assertions": [
+      { "type": "requestCount", "expected": 3 },
+      { "type": "error", "code": "api_error", "httpStatus": 504, "retryable": true, "requestId": "req_last" }
+    ]
+  },
+  {
+    "name": "a dropped connection is retried for a query",
+    "operation": "GetSite",
+    "responses": [
+      { "networkError": true },
+      { "status": 200, "body": { "data": { "site": { "id": "site_1" } } } }
+    ],
+    "assertions": [
+      { "type": "requestCount", "expected": 2 },
+      { "type": "noError" }
+    ]
+  },
+  {
+    "name": "a dropped connection every time is network",
+    "operation": "GetSite",
+    "responses": [{ "networkError": true }, { "networkError": true }, { "networkError": true }],
+    "assertions": [
+      { "type": "requestCount", "expected": 3 },
+      { "type": "error", "code": "network", "retryable": true }
+    ]
+  },
+  {
+    "name": "429 waits for Retry-After",
+    "operation": "GetSite",
+    "responses": [
+      { "status": 429, "headers": { "retry-after": "2" }, "body": { "errors": [{ "message": "At most 120 requests a minute per token" }] } },
+      { "status": 200, "body": { "data": { "site": { "id": "site_1" } } } }
+    ],
+    "assertions": [
+      { "type": "requestCount", "expected": 2 },
+      { "type": "delayBetweenRequests", "index": 0, "minMs": 2000, "maxMs": 2600 },
+      { "type": "noError" }
+    ]
+  },
+  {
+    "name": "429 retries even a write that isn't safe to repeat",
+    "operation": "CreateWebhook",
+    "variables": { "webhook": { "url": "https://erp.example.com/rockware", "events": ["ORDER_UPDATED"] } },
+    "responses": [
+      { "status": 429, "headers": { "retry-after": "1" } },
+      { "status": 200, "body": { "data": { "createWebhook": { "secret": "whsec_x", "webhook": { "id": "wh_1" } } } } }
+    ],
+    "assertions": [
+      { "type": "requestCount", "expected": 2 },
+      { "type": "noError" }
+    ]
+  },
+  {
+    "name": "429 asking for more than 60 seconds isn't waited for",
+    "operation": "GetSite",
+    "responses": [{ "status": 429, "headers": { "retry-after": "120" } }],
+    "assertions": [
+      { "type": "requestCount", "expected": 1 },
+      { "type": "error", "code": "rate_limit", "httpStatus": 429, "retryable": true, "retryAfter": 120 }
+    ]
+  },
+  {
+    "name": "Retry-After as a date is understood",
+    "operation": "GetSite",
+    "responses": [
+      { "status": 503, "headers": { "retry-after": "{{httpdate+1s}}" } },
+      { "status": 200, "body": { "data": { "site": { "id": "site_1" } } } }
+    ],
+    "assertions": [
+      { "type": "requestCount", "expected": 2 },
+      { "type": "delayBetweenRequests", "index": 0, "minMs": 1000, "maxMs": 2600 },
+      { "type": "noError" }
+    ]
+  },
+  {
+    "name": "a write that is safe to repeat retries a 503",
+    "operation": "UpsertOrder",
+    "variables": { "order": { "externalId": "SO-1001" } },
+    "responses": [
+      { "status": 503 },
+      { "status": 200, "body": { "data": { "upsertOrder": { "action": "UNCHANGED", "order": { "id": "ord_1" }, "errors": [] } } } }
+    ],
+    "assertions": [
+      { "type": "requestCount", "expected": 2 },
+      { "type": "noError" }
+    ]
+  },
+  {
+    "name": "a write that isn't safe to repeat doesn't retry a 503",
+    "operation": "CreateWebhook",
+    "variables": { "webhook": { "url": "https://erp.example.com/rockware", "events": ["ORDER_UPDATED"] } },
+    "responses": [{ "status": 503 }],
+    "assertions": [
+      { "type": "requestCount", "expected": 1 },
+      { "type": "error", "code": "api_error", "httpStatus": 503, "retryable": true }
+    ]
+  },
+  {
+    "name": "a write that isn't safe to repeat doesn't retry a dropped connection",
+    "operation": "SendTestWebhook",
+    "variables": { "id": "wh_1" },
+    "responses": [{ "networkError": true }],
+    "assertions": [
+      { "type": "requestCount", "expected": 1 },
+      { "type": "error", "code": "network" }
+    ]
+  },
+  {
+    "name": "an error that isn't retryable isn't retried",
+    "operation": "GetSite",
+    "responses": [{ "status": 403, "body": { "errors": [{ "message": "No" }] } }],
+    "assertions": [{ "type": "requestCount", "expected": 1 }]
+  },
+  {
+    "name": "retry can be turned off",
+    "client": { "retry": false },
+    "operation": "GetSite",
+    "responses": [{ "status": 503 }],
+    "assertions": [
+      { "type": "requestCount", "expected": 1 },
+      { "type": "error", "code": "api_error", "httpStatus": 503 }
+    ]
+  }
+]

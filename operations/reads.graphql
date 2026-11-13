@@ -1,0 +1,142 @@
+# Reads. Every operation asks for one root field, and the SDKs return that
+# field. A list operation takes the paging arguments (first, after) and
+# returns a connection, which the SDKs can page through for you.
+
+query GetSite {
+  site { ...SiteFields }
+}
+
+query GetWorkcenter($id: ID!) {
+  workcenter(id: $id) { ...WorkcenterFields }
+}
+
+query ListWorkcenters($first: Int, $after: String, $updatedSince: DateTime, $includeDeleted: Boolean) {
+  workcenters(first: $first, after: $after, updatedSince: $updatedSince, includeDeleted: $includeDeleted) {
+    nodes { ...WorkcenterFields }
+    pageInfo { hasNextPage endCursor }
+  }
+}
+
+query GetStation($id: ID!) {
+  station(id: $id) { ...StationFields }
+}
+
+query ListStations($first: Int, $after: String, $updatedSince: DateTime, $includeDeleted: Boolean) {
+  stations(first: $first, after: $after, updatedSince: $updatedSince, includeDeleted: $includeDeleted) {
+    nodes { ...StationFields }
+    pageInfo { hasNextPage endCursor }
+  }
+}
+
+query GetCustomer($id: ID!) {
+  customer(id: $id) { ...CustomerFields }
+}
+
+query ListCustomers($first: Int, $after: String, $updatedSince: DateTime, $includeDeleted: Boolean) {
+  customers(first: $first, after: $after, updatedSince: $updatedSince, includeDeleted: $includeDeleted) {
+    nodes { ...CustomerFields }
+    pageInfo { hasNextPage endCursor }
+  }
+}
+
+query GetMaterial($id: ID!) {
+  material(id: $id) { ...MaterialFields }
+}
+
+query ListMaterials($first: Int, $after: String, $updatedSince: DateTime, $includeDeleted: Boolean) {
+  materials(first: $first, after: $after, updatedSince: $updatedSince, includeDeleted: $includeDeleted) {
+    nodes { ...MaterialFields }
+    pageInfo { hasNextPage endCursor }
+  }
+}
+
+query GetProduct($id: ID!) {
+  product(id: $id) { ...ProductFields }
+}
+
+query ListProducts($first: Int, $after: String, $updatedSince: DateTime, $includeDeleted: Boolean) {
+  products(first: $first, after: $after, updatedSince: $updatedSince, includeDeleted: $includeDeleted) {
+    nodes { ...ProductFields }
+    pageInfo { hasNextPage endCursor }
+  }
+}
+
+query GetTool($id: ID!) {
+  tool(id: $id) { ...ToolFields }
+}
+
+query ListTools($first: Int, $after: String, $updatedSince: DateTime, $includeDeleted: Boolean) {
+  tools(first: $first, after: $after, updatedSince: $updatedSince, includeDeleted: $includeDeleted) {
+    nodes { ...ToolFields }
+    pageInfo { hasNextPage endCursor }
+  }
+}
+
+query GetJob($id: ID!) {
+  job(id: $id) { ...JobFields }
+}
+
+query ListJobs($first: Int, $after: String, $updatedSince: DateTime, $includeDeleted: Boolean) {
+  jobs(first: $first, after: $after, updatedSince: $updatedSince, includeDeleted: $includeDeleted) {
+    nodes { ...JobFields }
+    pageInfo { hasNextPage endCursor }
+  }
+}
+
+query GetOrder($id: ID!) {
+  order(id: $id) { ...OrderFields }
+}
+
+query ListOrders($first: Int, $after: String, $updatedSince: DateTime, $includeDeleted: Boolean) {
+  orders(first: $first, after: $after, updatedSince: $updatedSince, includeDeleted: $includeDeleted) {
+    nodes { ...OrderFields }
+    pageInfo { hasNextPage endCursor }
+  }
+}
+
+query GetProductionRun($id: ID!) {
+  productionRun(id: $id) { ...ProductionRunFields }
+}
+
+query ListProductionRuns($first: Int, $after: String, $updatedSince: DateTime, $includeDeleted: Boolean) {
+  productionRuns(first: $first, after: $after, updatedSince: $updatedSince, includeDeleted: $includeDeleted) {
+    nodes { ...ProductionRunFields }
+    pageInfo { hasNextPage endCursor }
+  }
+}
+
+query GetStationLineup($id: ID!) {
+  station(id: $id) {
+    id
+    name
+    lineup {
+      position
+      predictedChangeoverStart
+      predictedStart
+      predictedEnd
+      startByAtRisk
+      endByAtRisk
+      progress { productId requiredGood good scrap }
+      run { ...ProductionRunFields }
+    }
+  }
+}
+
+query ListEntityModels {
+  entityModels { ...EntityModelFields }
+}
+
+query GetEntityModel($key: String!) {
+  entityModel(key: $key) { ...EntityModelFields }
+}
+
+query GetEntityRecord($id: ID!) {
+  entityRecord(id: $id) { ...EntityRecordFields }
+}
+
+query ListEntityRecords($model: String!, $first: Int, $after: String, $updatedSince: DateTime, $includeDeleted: Boolean) {
+  entityRecords(model: $model, first: $first, after: $after, updatedSince: $updatedSince, includeDeleted: $includeDeleted) {
+    nodes { ...EntityRecordFields }
+    pageInfo { hasNextPage endCursor }
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "name": "@rockwarehq/sdk",
+  "version": "0.1.0",
+  "description": "The Rockware developer API for TypeScript and JavaScript",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rockwarehq/rockware-sdk.git",
+    "directory": "typescript"
+  },
+  "homepage": "https://github.com/rockwarehq/rockware-sdk/tree/main/typescript#readme",
+  "keywords": ["rockware", "manufacturing", "mes", "graphql", "sdk"],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist", "README.md", "LICENSE"],
+  "sideEffects": false,
+  "packageManager": "pnpm@11.5.1",
+  "scripts": {
+    "generate": "tsx scripts/generate.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p . --noEmit",
+    "lint": "biome check .",
+    "test": "vitest run",
+    "prepublishOnly": "pnpm build"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.4.15",
+    "@graphql-codegen/core": "^5.0.0",
+    "@graphql-codegen/typescript": "^5.0.0",
+    "@graphql-codegen/typescript-operations": "^5.0.0",
+    "@types/node": "^24.10.8",
+    "graphql": "^16.14.2",
+    "tsx": "^4.19.4",
+    "typescript": "~6.0.2",
+    "vitest": "^4.1.8"
+  },
+  "engines": {
+    "node": ">=20.3.0"
+  }
+}

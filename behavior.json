@@ -1,0 +1,25 @@
+{
+  "$comment": "How every SDK retries. Queries are always safe to send again. A mutation is retried only when it is listed in safeToRepeat: sending it twice gives the same result as sending it once. See SPEC.md, Retry.",
+  "retry": {
+    "attempts": 3,
+    "baseDelayMs": 1000,
+    "maxJitterMs": 100,
+    "maxRetryAfterSeconds": 60
+  },
+  "safeToRepeat": [
+    "UpsertWorkcenters",
+    "UpsertStations",
+    "UpsertCustomers",
+    "UpsertMaterials",
+    "UpsertProducts",
+    "UpsertTools",
+    "UpsertJobs",
+    "UpsertProductionRuns",
+    "UpsertOrder",
+    "SequenceLineup",
+    "LinkExternalIds",
+    "UpsertEntityModels",
+    "UpsertEntityRecords",
+    "UpdateWebhook"
+  ]
+}

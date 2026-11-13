@@ -1,0 +1,132 @@
+[
+  {
+    "name": "a query is a POST to /graphql with the token and JSON",
+    "operation": "GetProduct",
+    "variables": { "id": "prd_1" },
+    "responses": [{ "status": 200, "body": { "data": { "product": { "id": "prd_1", "sku": "A-100" } } } }],
+    "assertions": [
+      { "type": "requestCount", "expected": 1 },
+      { "type": "requestMethod", "expected": "POST" },
+      { "type": "requestUrl", "expected": "https://acme-api.example.com/graphql" },
+      { "type": "requestHeader", "name": "authorization", "expected": "Bearer rw_app_test" },
+      { "type": "requestHeader", "name": "content-type", "pattern": "^application/json" },
+      { "type": "requestHeader", "name": "accept", "pattern": "^application/json" },
+      { "type": "requestBody", "path": "operationName", "expected": "GetProduct" },
+      { "type": "requestBody", "path": "variables.id", "expected": "prd_1" },
+      { "type": "requestBody", "path": "query", "pattern": "query GetProduct" },
+      { "type": "requestBody", "path": "query", "pattern": "fragment ProductFields on Product" },
+      { "type": "noError" }
+    ]
+  },
+  {
+    "name": "the method returns the root field, not data",
+    "operation": "GetProduct",
+    "variables": { "id": "prd_1" },
+    "responses": [{ "status": 200, "body": { "data": { "product": { "id": "prd_1", "sku": "A-100" } } } }],
+    "assertions": [
+      { "type": "result", "path": "id", "expected": "prd_1" },
+      { "type": "result", "path": "sku", "expected": "A-100" }
+    ]
+  },
+  {
+    "name": "a missing record is nothing, not an error",
+    "operation": "GetProduct",
+    "variables": { "id": "prd_404" },
+    "responses": [{ "status": 200, "body": { "data": { "product": null } } }],
+    "assertions": [
+      { "type": "noError" },
+      { "type": "result", "path": "", "expected": null }
+    ]
+  },
+  {
+    "name": "the user agent puts the app's name first",
+    "client": { "userAgent": "acme-erp-sync/2.1" },
+    "operation": "GetSite",
+    "responses": [{ "status": 200, "body": { "data": { "site": { "id": "site_1" } } } }],
+    "assertions": [
+      { "type": "requestHeader", "name": "user-agent", "pattern": "^acme-erp-sync/2\\.1 rockware-sdk-[a-z]+/\\d+\\.\\d+\\.\\d+" }
+    ]
+  },
+  {
+    "name": "without an app name, the user agent is the SDK's",
+    "operation": "GetSite",
+    "responses": [{ "status": 200, "body": { "data": { "site": { "id": "site_1" } } } }],
+    "assertions": [
+      { "type": "requestHeader", "name": "user-agent", "pattern": "^rockware-sdk-[a-z]+/\\d+\\.\\d+\\.\\d+" }
+    ]
+  },
+  {
+    "name": "a trailing slash on the host is dropped",
+    "client": { "host": "https://acme-api.example.com/" },
+    "operation": "GetSite",
+    "responses": [{ "status": 200, "body": { "data": { "site": { "id": "site_1" } } } }],
+    "assertions": [{ "type": "requestUrl", "expected": "https://acme-api.example.com/graphql" }]
+  },
+  {
+    "name": "localhost may use http",
+    "client": { "host": "http://localhost:3000" },
+    "operation": "GetSite",
+    "responses": [{ "status": 200, "body": { "data": { "site": { "id": "site_1" } } } }],
+    "assertions": [
+      { "type": "noError" },
+      { "type": "requestUrl", "expected": "http://localhost:3000/graphql" }
+    ]
+  },
+  {
+    "name": "any other http host is refused before sending",
+    "client": { "host": "http://acme-api.example.com" },
+    "operation": "GetSite",
+    "responses": [],
+    "assertions": [
+      { "type": "requestCount", "expected": 0 },
+      { "type": "error", "code": "usage", "retryable": false }
+    ]
+  },
+  {
+    "name": "a missing token is refused before sending",
+    "client": { "token": "" },
+    "operation": "GetSite",
+    "responses": [],
+    "assertions": [
+      { "type": "requestCount", "expected": 0 },
+      { "type": "error", "code": "usage" }
+    ]
+  },
+  {
+    "name": "a write sends its variables as given",
+    "operation": "UpsertOrder",
+    "variables": { "order": { "externalId": "SO-1001", "orderNumber": "1001" }, "source": "erp" },
+    "responses": [
+      { "status": 200, "body": { "data": { "upsertOrder": { "action": "CREATED", "order": { "id": "ord_1" }, "errors": [] } } } }
+    ],
+    "assertions": [
+      { "type": "requestBody", "path": "operationName", "expected": "UpsertOrder" },
+      { "type": "requestBody", "path": "variables.order.externalId", "expected": "SO-1001" },
+      { "type": "requestBody", "path": "variables.source", "expected": "erp" },
+      { "type": "result", "path": "action", "expected": "CREATED" }
+    ]
+  },
+  {
+    "name": "a write's refusals are in the answer, not an error",
+    "operation": "UpsertProducts",
+    "variables": { "products": [{ "externalId": "P-1", "materials": [{ "material": "M-404" }] }] },
+    "responses": [
+      {
+        "status": 200,
+        "body": {
+          "data": {
+            "upsertProducts": {
+              "results": [],
+              "errors": [{ "code": "MATERIAL_NOT_FOUND", "field": "products.0.materials.0.material", "message": "No material M-404" }]
+            }
+          }
+        }
+      }
+    ],
+    "assertions": [
+      { "type": "noError" },
+      { "type": "result", "path": "errors.0.code", "expected": "MATERIAL_NOT_FOUND" },
+      { "type": "result", "path": "results.length", "expected": 0 }
+    ]
+  }
+]

@@ -1,0 +1,150 @@
+{
+  "$comment": "Signature cases for verifyWebhook (SPEC.md section 7). now is unix seconds; tolerance is 300 unless a case sets it.",
+  "cases": [
+    {
+      "name": "the guide's example is valid",
+      "secret": "whsec_test",
+      "body": "{\"a\":1}",
+      "header": "t=1700000000,v1=38877139021993b830af32feea6e18a8da83eb2f6e49ee50bd9e4cf4ca4d3789",
+      "now": 1700000000,
+      "valid": true
+    },
+    {
+      "name": "spaces around the parts don't count",
+      "secret": "whsec_test",
+      "body": "{\"a\":1}",
+      "header": " t=1700000000 , v1=38877139021993b830af32feea6e18a8da83eb2f6e49ee50bd9e4cf4ca4d3789 ",
+      "now": 1700000000,
+      "valid": true
+    },
+    {
+      "name": "the parts can come in any order",
+      "secret": "whsec_test",
+      "body": "{\"a\":1}",
+      "header": "v1=38877139021993b830af32feea6e18a8da83eb2f6e49ee50bd9e4cf4ca4d3789,t=1700000000",
+      "now": 1700000000,
+      "valid": true
+    },
+    {
+      "name": "a full event is valid",
+      "secret": "whsec_test",
+      "body": "{\"id\":\"evt_1\",\"type\":\"order.updated\",\"occurredAt\":\"2026-11-09T15:00:00.000Z\",\"siteId\":\"site_1\",\"data\":{\"object\":\"order\",\"id\":\"ord_1\"}}",
+      "header": "t=1700000000,v1=236c14c5656906da5cdf38cecc494968b3b4c55aeef1d83818a866f6e046d75e",
+      "now": 1700000000,
+      "valid": true
+    },
+    {
+      "name": "just inside the tolerance, in the past",
+      "secret": "whsec_test",
+      "body": "{\"a\":1}",
+      "header": "t=1700000000,v1=38877139021993b830af32feea6e18a8da83eb2f6e49ee50bd9e4cf4ca4d3789",
+      "now": 1700000300,
+      "valid": true
+    },
+    {
+      "name": "just outside the tolerance, in the past",
+      "secret": "whsec_test",
+      "body": "{\"a\":1}",
+      "header": "t=1700000000,v1=38877139021993b830af32feea6e18a8da83eb2f6e49ee50bd9e4cf4ca4d3789",
+      "now": 1700000301,
+      "valid": false
+    },
+    {
+      "name": "just outside the tolerance, in the future",
+      "secret": "whsec_test",
+      "body": "{\"a\":1}",
+      "header": "t=1700000000,v1=38877139021993b830af32feea6e18a8da83eb2f6e49ee50bd9e4cf4ca4d3789",
+      "now": 1699999699,
+      "valid": false
+    },
+    {
+      "name": "a wider tolerance lets an older one through",
+      "secret": "whsec_test",
+      "body": "{\"a\":1}",
+      "header": "t=1700000000,v1=38877139021993b830af32feea6e18a8da83eb2f6e49ee50bd9e4cf4ca4d3789",
+      "now": 1700000500,
+      "tolerance": 600,
+      "valid": true
+    },
+    {
+      "name": "the wrong secret",
+      "secret": "whsec_other",
+      "body": "{\"a\":1}",
+      "header": "t=1700000000,v1=38877139021993b830af32feea6e18a8da83eb2f6e49ee50bd9e4cf4ca4d3789",
+      "now": 1700000000,
+      "valid": false
+    },
+    {
+      "name": "a changed body",
+      "secret": "whsec_test",
+      "body": "{\"a\": 1}",
+      "header": "t=1700000000,v1=38877139021993b830af32feea6e18a8da83eb2f6e49ee50bd9e4cf4ca4d3789",
+      "now": 1700000000,
+      "valid": false
+    },
+    {
+      "name": "a changed time",
+      "secret": "whsec_test",
+      "body": "{\"a\":1}",
+      "header": "t=1700000001,v1=38877139021993b830af32feea6e18a8da83eb2f6e49ee50bd9e4cf4ca4d3789",
+      "now": 1700000000,
+      "valid": false
+    },
+    {
+      "name": "no v1",
+      "secret": "whsec_test",
+      "body": "{\"a\":1}",
+      "header": "t=1700000000",
+      "now": 1700000000,
+      "valid": false
+    },
+    {
+      "name": "no t",
+      "secret": "whsec_test",
+      "body": "{\"a\":1}",
+      "header": "v1=38877139021993b830af32feea6e18a8da83eb2f6e49ee50bd9e4cf4ca4d3789",
+      "now": 1700000000,
+      "valid": false
+    },
+    {
+      "name": "t isn't a whole number",
+      "secret": "whsec_test",
+      "body": "{\"a\":1}",
+      "header": "t=1700000000.5,v1=38877139021993b830af32feea6e18a8da83eb2f6e49ee50bd9e4cf4ca4d3789",
+      "now": 1700000000,
+      "valid": false
+    },
+    {
+      "name": "v1 isn't hex",
+      "secret": "whsec_test",
+      "body": "{\"a\":1}",
+      "header": "t=1700000000,v1=not-hex",
+      "now": 1700000000,
+      "valid": false
+    },
+    {
+      "name": "v1 is too short",
+      "secret": "whsec_test",
+      "body": "{\"a\":1}",
+      "header": "t=1700000000,v1=3887713902",
+      "now": 1700000000,
+      "valid": false
+    },
+    {
+      "name": "an empty header",
+      "secret": "whsec_test",
+      "body": "{\"a\":1}",
+      "header": "",
+      "now": 1700000000,
+      "valid": false
+    },
+    {
+      "name": "an empty secret",
+      "secret": "",
+      "body": "{\"a\":1}",
+      "header": "t=1700000000,v1=38877139021993b830af32feea6e18a8da83eb2f6e49ee50bd9e4cf4ca4d3789",
+      "now": 1700000000,
+      "valid": false
+    }
+  ]
+}

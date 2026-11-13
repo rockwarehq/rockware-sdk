@@ -1,0 +1,252 @@
+# What every SDK asks for on each record. Lists and single reads share these,
+# so a record looks the same however you got it. Links to other records are
+# ids, with a name where it helps; fetch the other record for more.
+
+fragment ExternalIdFields on ExternalId {
+  id
+  source
+}
+
+fragment SiteFields on Site {
+  id
+  name
+  description
+  timezone
+  updatedAt
+}
+
+fragment WorkcenterFields on Workcenter {
+  id
+  name
+  description
+  parentId
+  externalIds { ...ExternalIdFields }
+  createdAt
+  updatedAt
+}
+
+fragment StationFields on Station {
+  id
+  name
+  description
+  sortOrder
+  workcenterId
+  workcenter { id name }
+  currentJobId
+  currentJob { id name }
+  externalIds { ...ExternalIdFields }
+  archivedAt
+  createdAt
+  updatedAt
+  deletedAt
+}
+
+fragment CustomerFields on Customer {
+  id
+  name
+  externalIds { ...ExternalIdFields }
+  createdAt
+  updatedAt
+  deletedAt
+}
+
+fragment MaterialFields on Material {
+  id
+  materialNumber
+  name
+  description
+  classification
+  shortCode
+  externalNumber
+  unitCost
+  version
+  externalIds { ...ExternalIdFields }
+  archivedAt
+  createdAt
+  updatedAt
+  deletedAt
+}
+
+fragment ProductFields on Product {
+  id
+  sku
+  name
+  description
+  externalSku
+  itemCost
+  weight
+  version
+  externalIds { ...ExternalIdFields }
+  archivedAt
+  createdAt
+  updatedAt
+  deletedAt
+}
+
+fragment ToolFields on Tool {
+  id
+  name
+  description
+  cavityCount
+  cavities { id name position }
+  version
+  externalIds { ...ExternalIdFields }
+  archivedAt
+  createdAt
+  updatedAt
+  deletedAt
+}
+
+fragment JobFields on Job {
+  id
+  name
+  description
+  version
+  standardRate
+  standardRateUnit
+  standardRatePeriod
+  standardCycle
+  standardQuantity
+  productsPerCycle
+  profileId
+  tools { id name }
+  items {
+    id
+    quantity
+    isActive
+    cavityId
+    product { id sku }
+    tool { id name }
+  }
+  eligibleStations { id name }
+  externalIds { ...ExternalIdFields }
+  archivedAt
+  createdAt
+  updatedAt
+  deletedAt
+}
+
+fragment OrderFields on Order {
+  id
+  orderNumber
+  poNumber
+  status
+  notes
+  customerId
+  customer { id name }
+  defaultTargetQuantity
+  startDate
+  dueDate
+  openedAt
+  completedAt
+  cancelledAt
+  lines {
+    id
+    productId
+    product { id sku }
+    targetQuantity
+  }
+  externalIds { ...ExternalIdFields }
+  createdAt
+  updatedAt
+  deletedAt
+}
+
+fragment ProductionRunFields on ProductionRun {
+  id
+  status
+  rank
+  stationId
+  station { id name }
+  workcenterId
+  jobId
+  job { id name }
+  parts {
+    productId
+    product { id sku }
+    perCycle
+    requiredGood
+    goodCount
+    scrapCount
+    metAt
+  }
+  startBy
+  endBy
+  startByMissed
+  endByMissed
+  plannedStart
+  plannedEnd
+  plannedBusinessDate
+  plannedShiftName
+  plannedChangeoverMinutes
+  actualChangeoverMinutes
+  runStartedAt
+  quantityMetAt
+  closedAt
+  closedBusinessDate
+  closeReason
+  skipCount
+  jobChangedAt
+  externalIds { ...ExternalIdFields }
+  createdAt
+  updatedAt
+}
+
+fragment EntityModelFields on EntityModel {
+  id
+  key
+  label
+  description
+  version
+  fields {
+    key
+    label
+    description
+    type
+    required
+    isList
+    refModel
+    options { value label }
+  }
+  createdAt
+  updatedAt
+}
+
+fragment EntityRecordFields on EntityRecord {
+  id
+  model
+  name
+  values
+  deleted
+  externalIds { ...ExternalIdFields }
+  createdAt
+  updatedAt
+}
+
+fragment WebhookFields on Webhook {
+  id
+  url
+  events
+  enabled
+  createdAt
+  updatedAt
+}
+
+fragment WebhookDeliveryFields on WebhookDelivery {
+  id
+  eventId
+  type
+  status
+  attempts
+  responseStatus
+  error
+  startedAt
+  finishedAt
+  nextAttemptAt
+}
+
+fragment UpsertErrorFields on UpsertError {
+  code
+  field
+  message
+}
