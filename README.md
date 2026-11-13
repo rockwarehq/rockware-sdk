@@ -6,17 +6,17 @@ Connect your own systems to Rockware: an ERP, a data warehouse, a script. These 
 | --- | --- | --- | --- |
 | TypeScript / JavaScript | [`typescript/`](typescript/) | `@rockwarehq/sdk` on npm | Ready |
 | Python | [`python/`](python/) | `rockware` on PyPI | Ready |
-| C# / .NET | `dotnet/` | `Rockware.Sdk` on NuGet | Coming |
-| Go | `go/` | `github.com/rockwarehq/rockware-sdk/go` | Coming |
+| C# / .NET | [`dotnet/`](dotnet/) | `Rockware.Sdk` on NuGet | Ready |
+| Go | [`go/`](go/) | `github.com/rockwarehq/rockware-sdk/go` | Ready |
 
 | Feature | TypeScript | Python | C# | Go |
 | --- | :-: | :-: | :-: | :-: |
-| Every operation, with types | ✓ | ✓ | | |
-| One error type, with codes and hints | ✓ | ✓ | | |
-| Safe retries | ✓ | ✓ | | |
-| Paging | ✓ | ✓ | | |
-| Webhook checks | ✓ | ✓ | | |
-| Hooks for logs and metrics | ✓ | ✓ | | |
+| Every operation, with types | ✓ | ✓ | ✓ | ✓ |
+| One error type, with codes and hints | ✓ | ✓ | ✓ | ✓ |
+| Safe retries | ✓ | ✓ | ✓ | ✓ |
+| Paging | ✓ | ✓ | ✓ | ✓ |
+| Webhook checks | ✓ | ✓ | ✓ | ✓ |
+| Hooks for logs and metrics | ✓ | ✓ | ✓ | ✓ |
 
 ## What you can do
 
@@ -66,6 +66,32 @@ for product in rockware.list_all_products():
 ```
 
 More in [python/README.md](python/README.md).
+
+### C# / .NET
+
+```csharp
+using var rockware = new RockwareClient(new RockwareOptions { Host = "https://acme-api.rockware.io", Token = token });
+
+await foreach (var product in rockware.ListAllProductsAsync())
+    Console.WriteLine($"{product.Sku} {product.Name}");
+```
+
+More in [dotnet/README.md](dotnet/README.md).
+
+### Go
+
+```go
+client, err := rockware.NewClient(rockware.Config{Host: "https://acme-api.rockware.io", Token: token})
+
+for product, err := range client.ListAllProducts(ctx, nil) {
+	if err != nil {
+		return err
+	}
+	fmt.Println(product.Sku, product.Name)
+}
+```
+
+More in [go/README.md](go/README.md).
 
 ## How it's built
 

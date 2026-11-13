@@ -1,0 +1,91 @@
+# Publishes Rockware.Sdk to NuGet when a v<version> tag is pushed. Run it by
+# hand to rehearse: it builds, tests and packs, and publishes nothing.
+#
+# No NuGet API key is stored. It uses NuGet trusted publishing: nuget.org
+# trusts this workflow on this repo, and GitHub proves who is asking. To set
+# it up once, on nuget.org: your account → Trusted Publishing → add a policy
+# for owner rockwarehq, repo rockware-sdk, workflow release-dotnet.yml,
+# environment release-nuget. Then set the repo variable NUGET_USER to the
+# nuget.org account (or org) that owns the package.
+
+name: Release .NET
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # Builds, tests and packs. It can't publish: it has no id-token.
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: dotnet
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: The tag matches the version
+        run: |
+          FILE="$(cat ../VERSION)"
+          PROJECT="$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' src/Rockware.Sdk/Rockware.Sdk.csproj)"
+          if [ "$FILE" != "$PROJECT" ]; then
+            echo "::error::VERSION $FILE and Rockware.Sdk.csproj $PROJECT must match"
+            exit 1
+          fi
+          if [ "$GITHUB_EVENT_NAME" = "push" ] && [ "${GITHUB_REF#refs/tags/v}" != "$FILE" ]; then
+            echo "::error::Tag ${GITHUB_REF#refs/tags/} doesn't match VERSION $FILE"
+            exit 1
+          fi
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - run: dotnet test tests/Rockware.Sdk.Tests
+      - run: dotnet pack src/Rockware.Sdk -c Release -o out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nuget-package
+          path: dotnet/out/*.nupkg
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: release-nuget
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: nuget-package
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Sign in to NuGet with trusted publishing
+        id: login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ vars.NUGET_USER }}
+
+      # --skip-duplicate: a version already on NuGet is left alone, so the
+      # workflow can be run again after a failure elsewhere.
+      - name: Publish
+        run: dotnet nuget push "*.nupkg" --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
