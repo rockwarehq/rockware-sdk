@@ -15,7 +15,7 @@ conformance/ ─────────────────────▶ 
 | SDK | Folder | Generator | Runner |
 | --- | --- | --- | --- |
 | TypeScript | `typescript/` | `pnpm generate` (`scripts/generate.ts`) | `test/conformance.test.ts` |
-| Python | `python/` | to come | to come |
+| Python | `python/` | `python scripts/generate.py` (needs `pip install -e ".[dev]"`) | `tests/test_conformance.py`, both clients |
 | C# / .NET | `dotnet/` | to come | to come |
 | Go | `go/` | to come | to come |
 

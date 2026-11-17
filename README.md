@@ -5,18 +5,18 @@ Connect your own systems to Rockware: an ERP, a data warehouse, a script. These 
 | Language | Folder | Package | Status |
 | --- | --- | --- | --- |
 | TypeScript / JavaScript | [`typescript/`](typescript/) | `@rockwarehq/sdk` on npm | Ready |
-| Python | `python/` | `rockware` on PyPI | Coming |
+| Python | [`python/`](python/) | `rockware` on PyPI | Ready |
 | C# / .NET | `dotnet/` | `Rockware.Sdk` on NuGet | Coming |
 | Go | `go/` | `github.com/rockwarehq/rockware-sdk/go` | Coming |
 
 | Feature | TypeScript | Python | C# | Go |
 | --- | :-: | :-: | :-: | :-: |
-| Every operation, with types | ✓ | | | |
-| One error type, with codes and hints | ✓ | | | |
-| Safe retries | ✓ | | | |
-| Paging | ✓ | | | |
-| Webhook checks | ✓ | | | |
-| Hooks for logs and metrics | ✓ | | | |
+| Every operation, with types | ✓ | ✓ | | |
+| One error type, with codes and hints | ✓ | ✓ | | |
+| Safe retries | ✓ | ✓ | | |
+| Paging | ✓ | ✓ | | |
+| Webhook checks | ✓ | ✓ | | |
+| Hooks for logs and metrics | ✓ | ✓ | | |
 
 ## What you can do
 
@@ -51,6 +51,21 @@ for await (const product of rockware.listAllProducts()) {
 ```
 
 More in [typescript/README.md](typescript/README.md).
+
+### Python
+
+```python
+import os
+
+from rockware import Rockware
+
+rockware = Rockware(host="https://acme-api.rockware.io", token=os.environ["ROCKWARE_TOKEN"])
+
+for product in rockware.list_all_products():
+    print(product["sku"], product["name"])
+```
+
+More in [python/README.md](python/README.md).
 
 ## How it's built
 
