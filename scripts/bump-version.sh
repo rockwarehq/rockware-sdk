@@ -24,6 +24,13 @@ sed -i.bak -E "s/^version = \"[^\"]+\"/version = \"$VERSION\"/" python/pyproject
 sed -i.bak -E "s/^VERSION = \"[^\"]+\"/VERSION = \"$VERSION\"/" python/src/rockware/_generated/version.py
 rm -f python/pyproject.toml.bak python/src/rockware/_generated/version.py.bak
 
+# C#: the project's <Version>, and Go and C#'s generated version lines (the
+# same lines codegen writes).
+sed -i.bak -E "s|<Version>[^<]+</Version>|<Version>$VERSION</Version>|" dotnet/src/Rockware.Sdk/Rockware.Sdk.csproj
+sed -i.bak -E "s/^    public const string Version = \"[^\"]+\";/    public const string Version = \"$VERSION\";/" dotnet/src/Rockware.Sdk/Generated/Operations.g.cs
+sed -i.bak -E "s/^const Version = \"[^\"]+\"/const Version = \"$VERSION\"/" go/operations_gen.go
+rm -f dotnet/src/Rockware.Sdk/Rockware.Sdk.csproj.bak dotnet/src/Rockware.Sdk/Generated/Operations.g.cs.bak go/operations_gen.go.bak
+
 # MIGRATING.md: "# Unreleased" becomes this version, and a new one starts above it.
 if grep -q '^# Unreleased$' MIGRATING.md; then
   node -e '

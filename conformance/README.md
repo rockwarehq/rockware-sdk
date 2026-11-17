@@ -44,7 +44,7 @@ If more requests come than there are answers, the runner fails the test.
 | `requestCount` | Exactly `expected` requests were made |
 | `requestMethod`, `requestUrl` | The first request's method or URL is `expected` |
 | `requestHeader` | Request `index` (default 0) has header `name` (any case) equal to `expected`, or matching the regex `pattern` |
-| `requestBody` | The JSON body of request `index` (default 0) at `path` is `expected`, matches `pattern`, or is missing when `absent` is true |
+| `requestBody` | The JSON body of request `index` (default 0) at `path` is `expected`, matches `pattern`, or is missing when `absent` is true. `expectedInstant` compares a date and time as a moment, so `…00:00Z`, `…00:00.000Z` and `…00:00+00:00` are the same. |
 | `delayBetweenRequests` | The gap between request `index` and the next is at least `minMs`, and at most `maxMs` if given |
 | `noError` | The call didn't fail |
 | `error` | The call failed with a `RockwareError`, and each field given (`code`, `httpStatus`, `retryable`, `retryAfter`, `requestId`, `serverCode`) is equal |
