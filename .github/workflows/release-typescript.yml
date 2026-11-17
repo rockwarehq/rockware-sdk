@@ -1,37 +1,62 @@
-# Publishes @rockwarehq/sdk to npm when a v<version> tag is pushed. The tag,
-# VERSION and typescript/package.json must all agree.
+# Publishes @rockwarehq/sdk to npm when a v<version> tag is pushed. Run it by
+# hand (Actions → Release TypeScript → Run workflow) to rehearse: it builds,
+# tests and does a dry-run publish, and publishes nothing.
 #
-# Needs the NPM_TOKEN secret: an npm automation token that can publish to the
-# @rockwarehq scope.
+# No npm token is stored. It uses npm trusted publishing: npm trusts this
+# workflow on this repo, and GitHub proves who is asking. To set it up once,
+# on npmjs.com: the @rockwarehq org → @rockwarehq/sdk → Settings → Trusted
+# publishing → GitHub Actions, repo rockwarehq/rockware-sdk, workflow
+# release-typescript.yml, environment release-npm.
+#
+# The first version has to exist before trusted publishing can be set on it,
+# so 0.1.0 is published once by hand: npm publish in typescript/, after
+# pnpm build.
 
 name: Release TypeScript
 
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
 
-permissions:
-  contents: read
-  id-token: write
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  publish:
+  # Builds and tests, and packs the tarball. It can't publish: it has no
+  # id-token, so a bad dependency here can't reach npm.
+  build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     defaults:
       run:
         working-directory: typescript
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tarball: ${{ steps.pack.outputs.tarball }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: The tag matches the version
+        id: version
         run: |
-          TAG="${GITHUB_REF#refs/tags/v}"
           FILE="$(cat ../VERSION)"
           PACKAGE="$(node -p 'require("./package.json").version')"
-          if [ "$TAG" != "$FILE" ] || [ "$TAG" != "$PACKAGE" ]; then
-            echo "::error::Tag v$TAG, VERSION $FILE and package.json $PACKAGE must match"
+          if [ "$FILE" != "$PACKAGE" ]; then
+            echo "::error::VERSION $FILE and package.json $PACKAGE must match"
             exit 1
           fi
+          if [ "$GITHUB_EVENT_NAME" = "push" ] && [ "${GITHUB_REF#refs/tags/v}" != "$FILE" ]; then
+            echo "::error::Tag ${GITHUB_REF#refs/tags/} doesn't match VERSION $FILE"
+            exit 1
+          fi
+          echo "version=$FILE" >> "$GITHUB_OUTPUT"
 
       - uses: pnpm/action-setup@v4
         with:
@@ -45,10 +70,69 @@ jobs:
           registry-url: "https://registry.npmjs.org"
 
       - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
 
-      - name: Publish
-        run: npm publish --provenance --access public
+      # Packed here, after the build, so the publish job uploads exactly
+      # these files and builds nothing itself.
+      - name: Pack
+        id: pack
+        run: |
+          TARBALL="$(npm pack --ignore-scripts --silent)"
+          echo "tarball=$TARBALL" >> "$GITHUB_OUTPUT"
+          tar -tzf "$TARBALL"
+
+      - name: Dry-run publish
+        run: npm publish "${{ steps.pack.outputs.tarball }}" --access public --dry-run
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: npm-tarball
+          path: typescript/${{ steps.pack.outputs.tarball }}
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: release-npm
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: npm-tarball
+
+      # Node 24's npm is new enough for trusted publishing (11.5.1 or later).
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+
+      # Publish only when npm says the version isn't there (E404). Any other
+      # failure stops the job, rather than publishing blind.
+      - name: Already published?
+        id: published
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          set +e
+          output=$(npm view "@rockwarehq/sdk@${VERSION}" version 2>&1)
+          status=$?
+          set -e
+          if [ "$status" -eq 0 ] && [ -n "$output" ]; then
+            echo "already=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::@rockwarehq/sdk@${VERSION} is already on npm"
+          elif echo "$output" | grep -q E404; then
+            echo "already=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "$output"
+            echo "::error::Couldn't tell whether ${VERSION} is on npm (exit $status)"
+            exit 1
+          fi
+
+      - name: Publish
+        if: steps.published.outputs.already != 'true'
+        run: npm publish "${{ needs.build.outputs.tarball }}" --access public --provenance
